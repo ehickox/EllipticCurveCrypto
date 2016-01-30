@@ -6,14 +6,17 @@ gx = 550662630222773436695787188951685343262506034537775941755001873603891167292
 gy = 32670510020758816978083085130507043184471273380659243275938904335757337482424
 gPoint = (gx,gy) # This is the generator point. One of trillions possible
 
-#Individual Transaction/Personal Information
+#Individual Transaction/Personal Information (example values)
 privKeyHex = 0xA0DC65FFCA799873CBEA0AC274015B9526505DAAAED385155425F7337704883E
 privKey = 75263518707598184987916378021939673586055614731957507592904438851787542395619
 RandNum = 28695618543805844332113829720373285210420739438570883203839696518176414791234
 HashOfThingToSign = 86032112319101611046176971828093669637772856272773459297323797145286374828050 # the hash of your message/transaction
 
-# Euclidian Algorithm - Elliptic Curve Division
 def modular_inverse(a, n=secp256k1):
+    """
+    Euclidian Algorithm - Elliptic Curve Division
+    """
+    
     lm = 1
     hm = 0
     low = a%n
@@ -25,22 +28,28 @@ def modular_inverse(a, n=secp256k1):
         lm, low, hm, high = nm, new, lm, low
     return lm % n
 
-# Point addition - takes 2 points along the curve and computes where a line through them intersects the curve. The negative of the intersection point is used as a result of the addition.
-# P + Q = R, or (x_p,y_p)+(x_q,y_q) = (x_r,y_r) 
-# lamda = (yq-yp)/(xq-xp)
-# xr = lamda^2 - xp - xq
-# yr = lamda(xp-xr) - yp
 def ec_add(xp,yp,xq,yq):
+    """
+    Point addition - takes 2 points along the curve and computes where a line through them intersects the curve. The negative of the intersection point is used as a result of the addition.
+    P + Q = R, or (x_p,y_p)+(x_q,y_q) = (x_r,y_r) 
+    lamda = (yq-yp)/(xq-xp)
+    xr = lamda^2 - xp - xq
+    yr = lamda(xp-xr) - yp
+    """
+    
     lam = ((yq-yp) * modular_inverse(xq-xp,Pcurve)) % Pcurve
     xr = (lam*lam-xp-xq) % Pcurve
     yr = (lam*(xp-xr)-yp) % Pcurve
     return (xr,yr)
 
-# Point doubling - takes the tangent of a single point and finds the intersection with the tangent line.
-# lamda = (3(xp^2)+a)/(2yp)
-# xr = lamda^2 - 2xp
-# yr = lamda(xp-xr)-yp
 def point_double(xp,yp):
+    """
+    Point doubling - takes the tangent of a single point and finds the intersection with the tangent line.
+    lamda = (3(xp^2)+a)/(2yp)
+    xr = lamda^2 - 2xp
+    yr = lamda(xp-xr)-yp
+    """
+    
     LamNumer = 3*xp*xp+Acurve
     LamDenom = 2*yp
     Lam = (LamNumer * modular_inverse(LamDenom,Pcurve)) % Pcurve
@@ -48,8 +57,11 @@ def point_double(xp,yp):
     yr = (Lam*(xp-xr)-yp) % Pcurve
     return (xr,yr)
 
-# Double & add
 def ec_multiply(genX, genY, ScalarHex):
+    """
+    Double & add
+    """
+    
     if ScalarHex == 0 or ScalarHex >= N: raise Exception("Invalid Scalar/Private Key")
     ScalarBin = str(bin(ScalarHex))[2:]
     Qx, Qy = genX, genY 
@@ -72,8 +84,11 @@ def gen_public_key_compressed(genPoint, privKey=privKeyHex):
         print "02"+str(hex(retPublicKey[0])[2:-1]).zfill(64)
 
 def gen_public_key_uncompressed(genPoint, privKey=privKeyHex):
-    # Generater point times private key = Public key
-    # Q = dP
+    """
+    Generater point times private key = Public key
+    Q = dP
+    """
+    
     retPublicKey = ec_multiply(gPoint[0], gPoint[1], privKey)
     print "the private key (in base 10 format): " + str(privKey)
     print "the uncompressed public key (starts with '04' & is not the public address):"
